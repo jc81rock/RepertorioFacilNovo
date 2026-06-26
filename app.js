@@ -1438,6 +1438,7 @@ async function carregarMusicas() {
     montarListaModulo("Músicas cadastradas", [], function() {
       return "";
     });
+    vincularBotaoSalvarMusica();
     return;
   }
 
@@ -1462,6 +1463,16 @@ async function carregarMusicas() {
       </div>
     `;
   });
+
+  vincularBotaoSalvarMusica();
+}
+
+function vincularBotaoSalvarMusica() {
+  const botao = elemento("btn-salvar-modulo");
+
+  if (botao) {
+    botao.addEventListener("click", criarMusica);
+  }
 }
 
 async function criarMusica() {
@@ -1472,6 +1483,7 @@ async function criarMusica() {
   const artista = limparTexto(elemento("musica-artista")?.value);
   const tom = limparTexto(elemento("musica-tom")?.value);
   const bpm = limparTexto(elemento("musica-bpm")?.value);
+  const bpmNumero = parseInt(bpm, 10);
 
   if (!nome) {
     alert("Informe o nome da música.");
@@ -1485,7 +1497,7 @@ async function criarMusica() {
       nome: nome,
       artista: artista,
       tom: tom,
-      bpm: bpm ? Number(bpm) : null
+      bpm: Number.isFinite(bpmNumero) ? bpmNumero : null
     });
 
   if (error) {
