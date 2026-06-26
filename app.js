@@ -1420,7 +1420,7 @@ async function carregarMusicas() {
       { id: "musica-nome", placeholder: "Nome da música" },
       { id: "musica-artista", placeholder: "Artista / banda" },
       { id: "musica-tom", placeholder: "Tom" },
-      { id: "musica-bpm", placeholder: "BPM", tipo: "number" }
+      { id: "musica-bpm", placeholder: "BPM" }
     ],
     "Salvar música",
     criarMusica
@@ -1451,11 +1451,22 @@ async function carregarMusicas() {
       </p>
     `;
   });
+
+  const botaoSalvarMusica = elemento("btn-salvar-modulo");
+
+  if (botaoSalvarMusica) {
+    botaoSalvarMusica.addEventListener("click", criarMusica);
+  }
 }
 
 async function criarMusica() {
   const cliente = sb();
   const projetoId = obterProjetoAtualId();
+
+  if (!cliente || !projetoId) {
+    alert("Abra um projeto antes de salvar a música.");
+    return;
+  }
 
   const nome = limparTexto(elemento("musica-nome")?.value);
   const artista = limparTexto(elemento("musica-artista")?.value);
