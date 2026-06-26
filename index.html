@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Repertório Fácil</title>
 
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
 
@@ -18,7 +19,7 @@
         <h1>Entrar</h1>
         <p>Acesse seus projetos musicais, repertórios e agenda.</p>
 
-        <button id="btn-google" class="botao-google">
+        <button id="btn-google" class="botao-google" type="button">
           Entrar com Google
         </button>
 
@@ -31,11 +32,11 @@
         <input id="login-email" type="email" placeholder="E-mail" />
         <input id="login-senha" type="password" placeholder="Senha" />
 
-        <button id="btn-login-email" class="botao-principal">
+        <button id="btn-login-email" class="botao-principal" type="button">
           Entrar
         </button>
 
-        <button class="botao-link" onclick="mostrarTela('tela-cadastro')">
+        <button class="botao-link" onclick="mostrarTela('tela-cadastro')" type="button">
           Criar conta
         </button>
       </div>
@@ -54,13 +55,13 @@
         <input id="cadastro-senha" type="password" placeholder="Senha" />
         <input id="cadastro-repetir-senha" type="password" placeholder="Repetir senha" />
 
-        <button class="botao-principal" onclick="validarCadastro()">
+        <button class="botao-principal" onclick="validarCadastro()" type="button">
           Criar conta
         </button>
 
         <div id="mensagem-cadastro" class="mensagem-cadastro"></div>
 
-        <button class="botao-link" onclick="mostrarTela('tela-login')">
+        <button class="botao-link" onclick="mostrarTela('tela-login')" type="button">
           Voltar
         </button>
       </div>
@@ -72,13 +73,14 @@
         <header class="topo">
           <div class="topo-logo">
             <img src="logo.png" alt="Repertório Fácil" />
+
             <div>
               <h1>Meus Projetos</h1>
               <p id="nome-usuario">Olá</p>
             </div>
           </div>
 
-          <button class="botao-sair" onclick="sair()">
+          <button class="botao-sair" onclick="sair()" type="button">
             Sair
           </button>
         </header>
@@ -92,7 +94,7 @@
             </p>
           </div>
 
-          <button class="botao-novo" onclick="mostrarTela('tela-novo-projeto')">
+          <button class="botao-novo" onclick="mostrarTela('tela-novo-projeto')" type="button">
             Novo Projeto
           </button>
         </section>
@@ -106,10 +108,10 @@
         </section>
 
         <nav class="menu-inferior">
-          <button>Início</button>
-          <button class="ativo">Projetos</button>
-          <button>Agenda</button>
-          <button>Perfil</button>
+          <button type="button">Início</button>
+          <button class="ativo" type="button">Projetos</button>
+          <button type="button">Agenda</button>
+          <button type="button">Perfil</button>
         </nav>
 
       </div>
@@ -138,11 +140,11 @@
         <input id="projeto-cidade" type="text" placeholder="Cidade" />
         <input id="projeto-estado" type="text" placeholder="Estado (UF)" maxlength="2" />
 
-        <button id="btn-criar-projeto" class="botao-principal">
+        <button id="btn-criar-projeto" class="botao-principal" type="button">
           Criar Projeto
         </button>
 
-        <button class="botao-link" onclick="mostrarTela('tela-projetos')">
+        <button class="botao-link" onclick="mostrarTela('tela-projetos')" type="button">
           Cancelar
         </button>
       </div>
@@ -151,8 +153,8 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabaseClient.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <script src="supabaseClient.js?v=9"></script>
+  <script src="app.js?v=9"></script>
 
 </body>
 </html>
