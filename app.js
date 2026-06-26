@@ -1,123 +1,80 @@
-const URL_APP = "https://jc81rock.github.io/RepertorioFacilNovo/";
-
-function mostrarTela(idTela) {
-  const telas = document.querySelectorAll(".tela");
-
-  telas.forEach(function(tela) {
+function mostrarTela(id) {
+  document.querySelectorAll(".tela").forEach(tela => {
     tela.classList.remove("tela-ativa");
   });
 
-  const telaSelecionada = document.getElementById(idTela);
+  const tela = document.getElementById(id);
+  if (tela) tela.classList.add("tela-ativa");
 
-  if (telaSelecionada) {
-    telaSelecionada.classList.add("tela-ativa");
+  if (id === "tela-projetos") {
+    carregarProjetos();
   }
 }
 
-function mostrarMensagemCadastro(tipo, texto) {
-  const mensagem = document.getElementById("mensagem-cadastro");
+async function entrarComGoogle() {
+  await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin + window.location.pathname
+    }
+  });
+}
 
-  if (!mensagem) {
+async function entrarComEmail() {
+  const email = document.getElementById("login-email").value.trim();
+  const senha = document.getElementById("login-senha").value.trim();
+
+  if (!email || !senha) {
+    alert("Preencha e-mail e senha.");
     return;
   }
 
-  mensagem.className = "mensagem-cadastro " + tipo;
-  mensagem.textContent = texto;
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password: senha
+  });
+
+  if (error) {
+    alert("Erro ao entrar: " + error.message);
+    return;
+  }
+
+  mostrarTela("tela-projetos");
 }
 
-function validarCadastro() {
+async function validarCadastro() {
   const nome = document.getElementById("cadastro-nome").value.trim();
-  const cidade = document.getElementById("cadastro-cidade").value.trim();
   const email = document.getElementById("cadastro-email").value.trim();
   const senha = document.getElementById("cadastro-senha").value.trim();
   const repetirSenha = document.getElementById("cadastro-repetir-senha").value.trim();
+  const mensagem = document.getElementById("mensagem-cadastro");
 
-  if (nome === "") {
-    mostrarMensagemCadastro("erro", "Informe seu nome.");
-    return;
-  }
-
-  if (cidade === "") {
-    mostrarMensagemCadastro("erro", "Informe sua cidade.");
-    return;
-  }
-
-  if (email === "") {
-    mostrarMensagemCadastro("erro", "Informe seu e-mail.");
-    return;
-  }
-
-  if (senha === "") {
-    mostrarMensagemCadastro("erro", "Informe sua senha.");
-    return;
-  }
-
-  if (repetirSenha === "") {
-    mostrarMensagemCadastro("erro", "Repita sua senha.");
+  if (!nome || !email || !senha || !repetirSenha) {
+    mensagem.innerText = "Preencha todos os campos.";
     return;
   }
 
   if (senha !== repetirSenha) {
-    mostrarMensagemCadastro("erro", "As senhas não coincidem.");
+    mensagem.innerText = "As senhas não conferem.";
     return;
   }
 
-  mostrarMensagemCadastro("sucesso", "Dados validados com sucesso.");
-}
-
-async function entrarComGoogle() {
-  const { data, error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password: senha,
     options: {
-      redirectTo: URL_APP,
-      skipBrowserRedirect: true,
-      queryParams: {
-        prompt: "select_account"
+      data: {
+        nome: nome
       }
     }
   });
 
   if (error) {
-    alert("Erro ao entrar com Google: " + error.message);
+    mensagem.innerText = "Erro ao criar conta: " + error.message;
     return;
   }
 
-  if (data && data.url) {
-    window.location.href = data.url;
-  }
-}
-
-function preencherUsuario(usuario) {
-  const nomeUsuario = document.getElementById("nome-usuario");
-
-  if (!nomeUsuario || !usuario) {
-    return;
-  }
-
-  const nome =
-    usuario.user_metadata.full_name ||
-    usuario.user_metadata.name ||
-    usuario.email ||
-    "Usuário";
-
-  nomeUsuario.textContent = "Olá, " + nome;
-}
-
-async function verificarUsuarioLogado() {
-  const { data, error } = await supabaseClient.auth.getSession();
-
-  if (error) {
-    mostrarTela("tela-login");
-    return;
-  }
-
-  if (data.session && data.session.user) {
-    preencherUsuario(data.session.user);
-    mostrarTela("tela-projetos");
-    return;
-  }
-
-  mostrarTela("tela-login");
+  mensagem.innerText = "Conta criada com sucesso. Faça login para continuar.";
 }
 
 async function sair() {
@@ -125,19 +82,154 @@ async function sair() {
   mostrarTela("tela-login");
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-  const botaoGoogle = document.getElementById("btn-google");
+async function carregarUsuario() {
+  const { data } = await supabaseClient.auth.getSession();
+  const session = data.session;
 
-  if (botaoGoogle) {
-    botaoGoogle.addEventListener("click", entrarComGoogle);
+  if (!session) {
+    mostrarTela("tela-login");
+    return;
   }
 
-  supabaseClient.auth.onAuthStateChange(function(event, session) {
-    if (session && session.user) {
-      preencherUsuario(session.user);
-      mostrarTela("tela-projetos");
-    }
+  const user = session.user;
+  const nome =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.nome ||
+    user.email;
+
+  const campoNome = document.getElementById("nome-usuario");
+  if (campoNome) {
+    campoNome.innerText = "Olá, " + nome;
+  }
+
+  mostrarTela("tela-projetos");
+}
+
+async function carregarProjetos() {
+  const grid = document.querySelector(".grid-projetos");
+  if (!grid) return;
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) return;
+
+  const { data: projetos, error } = await supabaseClient
+    .from("projetos")
+    .select("*")
+    .eq("usuario_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  grid.innerHTML = `
+    <div class="card-projeto card-criar" onclick="mostrarTela('tela-novo-projeto')">
+      <div class="icone-mais">+</div>
+      <h3>Criar novo projeto</h3>
+      <p>Cadastre uma nova banda ou projeto musical.</p>
+    </div>
+  `;
+
+  if (!projetos || projetos.length === 0) {
+    grid.innerHTML += `
+      <div class="card-projeto">
+        <h3>Nenhum projeto cadastrado</h3>
+        <p>Clique em Novo Projeto para criar o primeiro.</p>
+      </div>
+    `;
+    return;
+  }
+
+  projetos.forEach(projeto => {
+    grid.innerHTML += `
+      <div class="card-projeto">
+        <span class="tag">${projeto.tipo || "Projeto"}</span>
+        <h3>${projeto.nome}</h3>
+        <p>${projeto.estilo || "Sem estilo informado"}</p>
+
+        <div class="detalhes">
+          <span>${projeto.cidade || ""}${projeto.estado ? " - " + projeto.estado : ""}</span>
+          <span>0 integrantes</span>
+        </div>
+
+        <button class="botao-card" onclick="acessarProjeto('${projeto.id}')">
+          Acessar projeto
+        </button>
+      </div>
+    `;
+  });
+}
+
+async function criarProjeto() {
+  const tela = document.getElementById("tela-novo-projeto");
+  const campos = tela.querySelectorAll("input, select");
+
+  const nome = campos[0].value.trim();
+  const tipo = campos[1].value.trim();
+  const estilo = campos[2].value.trim();
+  const cidade = campos[3].value.trim();
+  const estado = campos[4].value.trim().toUpperCase();
+
+  if (!nome) {
+    alert("Informe o nome do projeto.");
+    return;
+  }
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData.session?.user;
+
+  if (!user) {
+    alert("Você precisa estar logado.");
+    mostrarTela("tela-login");
+    return;
+  }
+
+  const { error } = await supabaseClient.from("projetos").insert({
+    usuario_id: user.id,
+    nome,
+    tipo,
+    estilo,
+    cidade,
+    estado
   });
 
-  verificarUsuarioLogado();
+  if (error) {
+    alert("Erro ao criar projeto: " + error.message);
+    return;
+  }
+
+  campos.forEach(campo => campo.value = "");
+  mostrarTela("tela-projetos");
+}
+
+function acessarProjeto(id) {
+  localStorage.setItem("projeto_atual", id);
+  alert("Projeto aberto. Próximo passo: criar o painel interno do projeto.");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.location.search.includes("error=")) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const btnGoogle = document.getElementById("btn-google");
+  if (btnGoogle) {
+    btnGoogle.addEventListener("click", entrarComGoogle);
+  }
+
+  const btnEntrar = document.querySelector("#tela-login .botao-principal");
+  if (btnEntrar) {
+    btnEntrar.removeAttribute("onclick");
+    btnEntrar.addEventListener("click", entrarComEmail);
+  }
+
+  const btnCriarProjeto = document.querySelector("#tela-novo-projeto .botao-principal");
+  if (btnCriarProjeto) {
+    btnCriarProjeto.addEventListener("click", criarProjeto);
+  }
+
+  carregarUsuario();
 });
