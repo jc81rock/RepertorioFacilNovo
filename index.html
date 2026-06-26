@@ -6,7 +6,7 @@
 
   <title>Repertório Fácil</title>
 
-  <link rel="stylesheet" href="style.css?v=9" />
+  <link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
 
@@ -36,7 +36,7 @@
           Entrar
         </button>
 
-        <button class="botao-link" onclick="mostrarTela('tela-cadastro')" type="button">
+        <button id="btn-ir-cadastro" class="botao-link" type="button">
           Criar conta
         </button>
       </div>
@@ -55,13 +55,13 @@
         <input id="cadastro-senha" type="password" placeholder="Senha" />
         <input id="cadastro-repetir-senha" type="password" placeholder="Repetir senha" />
 
-        <button class="botao-principal" onclick="validarCadastro()" type="button">
+        <button id="btn-criar-conta" class="botao-principal" type="button">
           Criar conta
         </button>
 
         <div id="mensagem-cadastro" class="mensagem-cadastro"></div>
 
-        <button class="botao-link" onclick="mostrarTela('tela-login')" type="button">
+        <button id="btn-voltar-login" class="botao-link" type="button">
           Voltar
         </button>
       </div>
@@ -80,7 +80,7 @@
             </div>
           </div>
 
-          <button class="botao-sair" onclick="sair()" type="button">
+          <button id="btn-sair" class="botao-sair" type="button">
             Sair
           </button>
         </header>
@@ -94,13 +94,13 @@
             </p>
           </div>
 
-          <button class="botao-novo" onclick="mostrarTela('tela-novo-projeto')" type="button">
+          <button id="btn-novo-projeto" class="botao-novo" type="button">
             Novo Projeto
           </button>
         </section>
 
         <section class="grid-projetos" id="lista-projetos">
-          <div class="card-projeto card-criar" onclick="mostrarTela('tela-novo-projeto')">
+          <div class="card-projeto card-criar" id="card-criar-projeto">
             <div class="icone-mais">+</div>
             <h3>Criar novo projeto</h3>
             <p>Cadastre uma nova banda ou projeto musical.</p>
@@ -144,7 +144,7 @@
           Criar Projeto
         </button>
 
-        <button class="botao-link" onclick="mostrarTela('tela-projetos')" type="button">
+        <button id="btn-cancelar-projeto" class="botao-link" type="button">
           Cancelar
         </button>
       </div>
@@ -153,8 +153,8 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabaseClient.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="supabaseClient.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 
 </body>
 </html>
