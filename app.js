@@ -1442,31 +1442,31 @@ async function carregarMusicas() {
   }
 
   montarListaModulo("Músicas cadastradas", data || [], function(item) {
+    const nome = escaparHtml(item.nome || "Sem nome");
+    const artista = escaparHtml(item.artista || "Artista não informado");
+    const tom = item.tom ? escaparHtml(item.tom) : "Não informado";
+    const bpm = item.bpm ? escaparHtml(item.bpm) : "Não informado";
+
     return `
-      <p>
-        <strong>${escaparHtml(item.nome || "Sem nome")}</strong><br>
-        ${escaparHtml(item.artista || "")}
-        ${item.tom ? " • Tom: " + escaparHtml(item.tom) : ""}
-        ${item.bpm ? " • BPM: " + escaparHtml(item.bpm) : ""}
-      </p>
+      <div style="border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:14px; margin:12px 0; background:#1f2937; color:#f9fafb;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div style="width:42px; height:42px; min-width:42px; border-radius:50%; background:#6d28d9; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">♪</div>
+
+          <div style="flex:1;">
+            <h4 style="margin:0 0 6px; color:#fff; font-size:17px;">${nome}</h4>
+            <p style="margin:3px 0; color:#d1d5db; font-size:13px;"><strong style="color:#f3f4f6;">Artista:</strong> ${artista}</p>
+            <p style="margin:3px 0; color:#d1d5db; font-size:13px;"><strong style="color:#f3f4f6;">Tom:</strong> ${tom}</p>
+            <p style="margin:3px 0; color:#d1d5db; font-size:13px;"><strong style="color:#f3f4f6;">BPM:</strong> ${bpm}</p>
+          </div>
+        </div>
+      </div>
     `;
   });
-
-  const botaoSalvarMusica = elemento("btn-salvar-modulo");
-
-  if (botaoSalvarMusica) {
-    botaoSalvarMusica.addEventListener("click", criarMusica);
-  }
 }
 
 async function criarMusica() {
   const cliente = sb();
   const projetoId = obterProjetoAtualId();
-
-  if (!cliente || !projetoId) {
-    alert("Abra um projeto antes de salvar a música.");
-    return;
-  }
 
   const nome = limparTexto(elemento("musica-nome")?.value);
   const artista = limparTexto(elemento("musica-artista")?.value);
