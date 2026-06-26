@@ -18,8 +18,8 @@ let appState = {
   telaAtual: "tela-login",
   historico: [],
   projetoAtual: null,
-  integrantes: [],
-  integranteEditandoId: null
+  musicas: [],
+  musicaEditandoId: null
 };
 
 function sb() {
@@ -683,45 +683,23 @@ function abrirModulo(modulo) {
 
   definirMenuModulo(modulo);
 
-  const area = elemento("area-modulo");
-  if (area) {
-    area.style.display = "block";
-    area.style.width = "100%";
-    area.style.gridColumn = "1 / -1";
-  }
-
   if (modulo === "integrantes") {
     carregarIntegrantes();
-    rolarParaModulo();
     return;
   }
 
   if (modulo === "musicas") {
     carregarMusicas();
-    rolarParaModulo();
     return;
   }
 
   if (modulo === "repertorios") {
     carregarRepertorios();
-    rolarParaModulo();
     return;
   }
 
   if (modulo === "eventos") {
     carregarEventos();
-    rolarParaModulo();
-    return;
-  }
-}
-
-function rolarParaModulo() {
-  const area = elemento("area-modulo");
-
-  if (area) {
-    setTimeout(function() {
-      area.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
   }
 }
 
@@ -793,6 +771,79 @@ function montarListaModulo(titulo, itens, renderItem) {
 }
 
 async function carregarIntegrantes() {
+  const projetoId = obterProjetoAtualId();
+
+  limparAreaModulo();
+
+  montarFormularioModulo(
+    "Novo integrante",
+    "Cadastre um músico ou administrador do projeto.",
+    [
+      { id: "integrante-nome", placeholder: "Nome do integrante" },
+      { id: "integrante-funcao", placeholder: "Função" },
+      { id: "integrante-email", placeholder: "E-mail", tipo: "email" }
+    ],
+    "Salvar integrante",
+    criarIntegrante
+  );
+
+  const cliente = sb();
+
+  const { data, error } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.integrantes)
+    .select("*")
+    .eq("projeto_id", projetoId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    montarListaModulo("Integrantes cadastrados", [], function() {
+      return "";
+    });
+    return;
+  }
+
+  montarListaModulo("Integrantes cadastrados", data || [], function(item) {
+    return `
+      <p>
+        <strong>${escaparHtml(item.nome || "Sem nome")}</strong><br>
+        ${escaparHtml(item.funcao || "Sem função")}
+        ${item.email ? " • " + escaparHtml(item.email) : ""}
+      </p>
+    `;
+  });
+}
+
+async function criarIntegrante() {
+  const cliente = sb();
+  const projetoId = obterProjetoAtualId();
+
+  const nome = limparTexto(elemento("integrante-nome")?.value);
+  const funcao = limparTexto(elemento("integrante-funcao")?.value);
+  const email = limparTexto(elemento("integrante-email")?.value);
+
+  if (!nome) {
+    alert("Informe o nome do integrante.");
+    return;
+  }
+
+  const { error } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.integrantes)
+    .insert({
+      projeto_id: projetoId,
+      nome: nome,
+      funcao: funcao,
+      email: email
+    });
+
+  if (error) {
+    alert("Erro ao salvar integrante: " + error.message);
+    return;
+  }
+
+  carregarIntegrantes();
+}
+
+async function carregarMusicas() {
   const area = elemento("area-modulo");
   const projetoId = obterProjetoAtualId();
 
@@ -812,330 +863,342 @@ async function carregarIntegrantes() {
 
   area.innerHTML = `
     <style>
-      .modulo-integrantes {
+      .modulo-musicas {
         display: grid;
-        grid-template-columns: minmax(280px, 380px) 1fr;
+        grid-template-columns: minmax(280px, 430px) 1fr;
         gap: 18px;
         width: 100%;
       }
 
-      .form-integrantes {
+      .form-musicas {
         display: grid;
-        gap: 10px;
+        gap: 12px;
       }
 
-      .form-integrantes label,
-      .filtros-integrantes label {
+      .form-musicas label,
+      .filtros-musicas label {
         display: grid;
-        gap: 6px;
-        font-size: 13px;
-        color: #e5e7eb;
+        gap: 7px;
+        font-size: 14px;
+        color: #ffffff;
       }
 
-      .form-integrantes input,
-      .form-integrantes select,
-      .filtros-integrantes input,
-      .filtros-integrantes select {
+      .form-musicas input,
+      .form-musicas textarea,
+      .filtros-musicas input,
+      .filtros-musicas select {
         width: 100%;
       }
 
-      .linha-form-integrantes {
+      .linha-form-musicas {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 12px;
       }
 
-      .acoes-integrante {
+      .acoes-musica {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin-top: 4px;
+        margin-top: 6px;
       }
 
       .botao-secundario-modulo {
         border: 0;
         border-radius: 12px;
-        padding: 11px 14px;
+        padding: 12px 14px;
         cursor: pointer;
         background: #eeeeee;
-        color: #222;
-        font-weight: 700;
+        color: #111111;
+        font-weight: 800;
       }
 
-      .filtros-integrantes {
+      .filtros-musicas {
         display: grid;
         grid-template-columns: 1.4fr 1fr;
-        gap: 10px;
-        margin: 10px 0 14px;
+        gap: 12px;
+        margin: 12px 0 18px;
       }
 
-      .lista-integrantes {
+      .lista-musicas {
         display: grid;
-        gap: 10px;
+        gap: 12px;
       }
 
-      .item-integrante {
-        border: 1px solid rgba(255, 255, 255, .16);
-        border-radius: 14px;
-        padding: 14px;
-        background: #1f2937;
-        color: #f9fafb;
+      .item-musica {
+        border: 1px solid rgba(255, 255, 255, .15);
+        border-radius: 16px;
+        padding: 16px;
+        background: rgba(255, 255, 255, .08);
+        color: #ffffff;
       }
 
-      .item-integrante-topo {
+      .item-musica-topo {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 10px;
+        gap: 14px;
       }
 
-      .foto-integrante-placeholder {
-        width: 42px;
-        height: 42px;
-        min-width: 42px;
+      .icone-musica-placeholder {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
         border-radius: 50%;
-        background: #6d28d9;
+        background: linear-gradient(135deg, #4f46e5, #a855f7);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
+        font-weight: 900;
         color: #ffffff;
       }
 
-      .dados-integrante {
+      .dados-musica {
         flex: 1;
       }
 
-      .dados-integrante h4 {
-        margin: 0 0 6px;
+      .dados-musica h4 {
+        margin: 0 0 8px;
         color: #ffffff;
-        font-size: 17px;
+        font-size: 18px;
       }
 
-      .dados-integrante p {
-        margin: 3px 0;
-        font-size: 13px;
-        color: #d1d5db;
-      }
-
-      .dados-integrante strong {
-        color: #f3f4f6;
-      }
-
-      .tag-admin {
-        display: inline-block;
-        margin-top: 8px;
-        padding: 4px 9px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 700;
-        background: #7c3aed;
-        color: #ffffff;
-      }
-
-      .tag-integrante {
-        display: inline-block;
-        margin-top: 8px;
-        padding: 4px 9px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 700;
-        background: #374151;
+      .dados-musica p {
+        margin: 5px 0;
+        font-size: 14px;
         color: #e5e7eb;
       }
 
-      .botoes-item-integrante {
+      .dados-musica strong {
+        color: #ffffff;
+      }
+
+      .links-musica {
         display: flex;
-        gap: 6px;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .links-musica a,
+      .tag-musica {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        background: #8b5cf6;
+        color: #ffffff;
+      }
+
+      .tag-musica.secundaria {
+        background: rgba(255, 255, 255, .14);
+      }
+
+      .botoes-item-musica {
+        display: flex;
+        gap: 8px;
         flex-wrap: wrap;
         justify-content: flex-end;
       }
 
-      .botoes-item-integrante button {
+      .botoes-item-musica button {
         border: 0;
         border-radius: 10px;
-        padding: 8px 10px;
+        padding: 9px 12px;
         cursor: pointer;
-        font-weight: 700;
+        font-weight: 800;
       }
 
-      .btn-editar-integrante {
-        background: #e5e7eb;
+      .btn-editar-musica {
+        background: #f3f4f6;
         color: #111827;
       }
 
-      .btn-excluir-integrante {
+      .btn-excluir-musica {
         background: #fee2e2;
         color: #991b1b;
       }
 
-      @media (max-width: 820px) {
-        .modulo-integrantes,
-        .linha-form-integrantes,
-        .filtros-integrantes {
+      @media (max-width: 900px) {
+        .modulo-musicas,
+        .linha-form-musicas,
+        .filtros-musicas {
           grid-template-columns: 1fr;
         }
 
-        .item-integrante-topo {
+        .item-musica-topo {
           flex-direction: column;
         }
 
-        .botoes-item-integrante {
+        .botoes-item-musica {
           justify-content: flex-start;
         }
       }
     </style>
 
-    <div class="modulo-integrantes">
+    <div class="modulo-musicas">
       <div class="card-projeto">
         <span class="tag">Cadastro</span>
-        <h3 id="titulo-form-integrante">Novo integrante</h3>
-        <p>Cadastre músicos, funções, instrumentos e administradores do projeto.</p>
+        <h3 id="titulo-form-musica">Nova música</h3>
+        <p>Cadastre músicas com tom, BPM, links e observações.</p>
 
-        <div class="form-integrantes">
+        <div class="form-musicas">
           <label>
-            Nome
-            <input id="integrante-nome" type="text" placeholder="Nome do integrante" />
+            Nome da música
+            <input id="musica-nome" type="text" placeholder="Ex: Tempo Perdido" />
           </label>
 
-          <div class="linha-form-integrantes">
+          <label>
+            Artista / Banda
+            <input id="musica-artista" type="text" placeholder="Ex: Legião Urbana" />
+          </label>
+
+          <div class="linha-form-musicas">
             <label>
-              Função
-              <input id="integrante-funcao" type="text" placeholder="Ex: Vocalista" />
+              Tom original
+              <input id="musica-tom" type="text" placeholder="Ex: A" />
             </label>
 
             <label>
-              Instrumento
-              <input id="integrante-instrumento" type="text" placeholder="Ex: Guitarra" />
+              Tom da banda
+              <input id="musica-tom-banda" type="text" placeholder="Ex: G" />
+            </label>
+          </div>
+
+          <div class="linha-form-musicas">
+            <label>
+              BPM
+              <input id="musica-bpm" type="number" min="0" step="1" placeholder="Ex: 132" />
+            </label>
+
+            <label>
+              Link YouTube
+              <input id="musica-youtube" type="url" placeholder="https://youtube.com/..." />
             </label>
           </div>
 
           <label>
-            Administrador
-            <select id="integrante-administrador">
-              <option value="false">Não</option>
-              <option value="true">Sim</option>
-            </select>
+            Link Spotify
+            <input id="musica-spotify" type="url" placeholder="https://open.spotify.com/..." />
           </label>
 
           <label>
-            E-mail
-            <input id="integrante-email" type="email" placeholder="email@exemplo.com" />
+            Observações
+            <textarea id="musica-observacoes" rows="3" placeholder="Ex: baixar meio tom, entrada da batera após 4 compassos"></textarea>
           </label>
 
-          <label>
-            Telefone
-            <input id="integrante-telefone" type="tel" placeholder="(00) 00000-0000" />
-          </label>
-
-          <div class="acoes-integrante">
-            <button class="botao-card" id="btn-salvar-integrante" type="button">Salvar integrante</button>
-            <button class="botao-secundario-modulo" id="btn-cancelar-integrante" type="button" style="display:none;">Cancelar edição</button>
+          <div class="acoes-musica">
+            <button class="botao-card" id="btn-salvar-musica" type="button">Salvar música</button>
+            <button class="botao-secundario-modulo" id="btn-cancelar-musica" type="button" style="display:none;">Cancelar edição</button>
           </div>
         </div>
       </div>
 
       <div class="card-projeto">
         <span class="tag">Lista</span>
-        <h3>Integrantes cadastrados</h3>
-        <p>Pesquise, ordene, edite ou exclua integrantes deste projeto.</p>
+        <h3>Músicas cadastradas</h3>
+        <p>Pesquise, ordene, edite ou exclua músicas deste projeto.</p>
 
-        <div class="filtros-integrantes">
+        <div class="filtros-musicas">
           <label>
             Pesquisar
-            <input id="busca-integrantes" type="text" placeholder="Buscar por nome, função, instrumento, e-mail ou telefone" />
+            <input id="busca-musicas" type="text" placeholder="Buscar por música, artista, tom ou observação" />
           </label>
 
           <label>
             Ordenar por
-            <select id="ordenar-integrantes">
+            <select id="ordenar-musicas">
               <option value="nome">Nome</option>
-              <option value="funcao">Função</option>
-              <option value="instrumento">Instrumento</option>
-              <option value="administrador">Administrador primeiro</option>
+              <option value="artista">Artista / Banda</option>
+              <option value="tom">Tom original</option>
+              <option value="tom_banda">Tom da banda</option>
+              <option value="bpm">BPM</option>
+              <option value="created_at">Mais recentes</option>
             </select>
           </label>
         </div>
 
-        <div id="lista-integrantes" class="lista-integrantes">
-          <p>Carregando integrantes...</p>
+        <div id="lista-musicas" class="lista-musicas">
+          <p>Carregando músicas...</p>
         </div>
       </div>
     </div>
   `;
 
-  appState.integranteEditandoId = null;
-  configurarEventosIntegrantes();
-  await buscarIntegrantes();
+  appState.musicaEditandoId = null;
+  configurarEventosMusicas();
+  await buscarMusicas();
 }
 
-function configurarEventosIntegrantes() {
-  const botaoSalvar = elemento("btn-salvar-integrante");
-  const botaoCancelar = elemento("btn-cancelar-integrante");
-  const busca = elemento("busca-integrantes");
-  const ordenar = elemento("ordenar-integrantes");
+function configurarEventosMusicas() {
+  const botaoSalvar = elemento("btn-salvar-musica");
+  const botaoCancelar = elemento("btn-cancelar-musica");
+  const busca = elemento("busca-musicas");
+  const ordenar = elemento("ordenar-musicas");
 
   if (botaoSalvar) {
-    botaoSalvar.addEventListener("click", salvarIntegrante);
+    botaoSalvar.addEventListener("click", salvarMusica);
   }
 
   if (botaoCancelar) {
-    botaoCancelar.addEventListener("click", limparFormularioIntegrante);
+    botaoCancelar.addEventListener("click", limparFormularioMusica);
   }
 
   if (busca) {
-    busca.addEventListener("input", renderizarListaIntegrantes);
+    busca.addEventListener("input", renderizarListaMusicas);
   }
 
   if (ordenar) {
-    ordenar.addEventListener("change", renderizarListaIntegrantes);
+    ordenar.addEventListener("change", renderizarListaMusicas);
   }
 }
 
-async function buscarIntegrantes() {
+async function buscarMusicas() {
   const cliente = sb();
   const projetoId = obterProjetoAtualId();
-  const lista = elemento("lista-integrantes");
+  const lista = elemento("lista-musicas");
 
   if (!cliente || !projetoId || !lista) {
     return;
   }
 
   const { data, error } = await cliente
-    .from(REPERTORIO_FACIL.tabelas.integrantes)
+    .from(REPERTORIO_FACIL.tabelas.musicas)
     .select("*")
     .eq("projeto_id", projetoId)
     .order("nome", { ascending: true });
 
   if (error) {
-    lista.innerHTML = `<p>Erro ao carregar integrantes: ${escaparHtml(error.message)}</p>`;
+    lista.innerHTML = `<p>Erro ao carregar músicas: ${escaparHtml(error.message)}</p>`;
     return;
   }
 
-  appState.integrantes = data || [];
-  renderizarListaIntegrantes();
+  appState.musicas = data || [];
+  renderizarListaMusicas();
 }
 
-function renderizarListaIntegrantes() {
-  const lista = elemento("lista-integrantes");
-  const busca = limparTexto(elemento("busca-integrantes")?.value).toLowerCase();
-  const ordem = elemento("ordenar-integrantes")?.value || "nome";
+function renderizarListaMusicas() {
+  const lista = elemento("lista-musicas");
+  const busca = limparTexto(elemento("busca-musicas")?.value).toLowerCase();
+  const ordem = elemento("ordenar-musicas")?.value || "nome";
 
   if (!lista) {
     return;
   }
 
-  let itens = [...(appState.integrantes || [])];
+  let itens = [...(appState.musicas || [])];
 
   if (busca) {
     itens = itens.filter(function(item) {
       const texto = [
         item.nome,
-        item.funcao,
-        item.instrumento,
-        item.email,
-        item.telefone,
-        item.administrador ? "administrador sim" : "administrador não"
+        item.artista,
+        item.tom,
+        item.tom_banda,
+        item.bpm,
+        item.observacoes
       ].join(" ").toLowerCase();
 
       return texto.includes(busca);
@@ -1143,102 +1206,112 @@ function renderizarListaIntegrantes() {
   }
 
   itens.sort(function(a, b) {
-    if (ordem === "administrador") {
-      return Number(b.administrador === true) - Number(a.administrador === true) || compararTexto(a.nome, b.nome);
+    if (ordem === "bpm") {
+      return Number(a.bpm || 0) - Number(b.bpm || 0) || compararTexto(a.nome, b.nome);
     }
 
-    if (ordem === "nome") {
-      return compararTexto(a.nome, b.nome);
+    if (ordem === "created_at") {
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
     }
 
-    if (ordem === "funcao") {
-      return compararTexto(a.funcao, b.funcao) || compararTexto(a.nome, b.nome);
+    if (ordem === "artista") {
+      return compararTexto(a.artista, b.artista) || compararTexto(a.nome, b.nome);
     }
 
-    if (ordem === "instrumento") {
-      return compararTexto(a.instrumento, b.instrumento) || compararTexto(a.nome, b.nome);
+    if (ordem === "tom") {
+      return compararTexto(a.tom, b.tom) || compararTexto(a.nome, b.nome);
+    }
+
+    if (ordem === "tom_banda") {
+      return compararTexto(a.tom_banda, b.tom_banda) || compararTexto(a.nome, b.nome);
     }
 
     return compararTexto(a.nome, b.nome);
   });
 
   if (itens.length === 0) {
-    lista.innerHTML = `<p>Nenhum integrante encontrado.</p>`;
+    lista.innerHTML = `<p>Nenhuma música encontrada.</p>`;
     return;
   }
 
   lista.innerHTML = itens.map(function(item) {
     const inicial = escaparHtml((item.nome || "?").trim().charAt(0).toUpperCase() || "?");
+    const youtube = limparTexto(item.youtube_url || item.youtube);
+    const spotify = limparTexto(item.spotify_url || item.spotify);
 
     return `
-      <div class="item-integrante">
-        <div class="item-integrante-topo">
-          <div class="foto-integrante-placeholder">${inicial}</div>
+      <div class="item-musica">
+        <div class="item-musica-topo">
+          <div class="icone-musica-placeholder">${inicial}</div>
 
-          <div class="dados-integrante">
+          <div class="dados-musica">
             <h4>${escaparHtml(item.nome || "Sem nome")}</h4>
-            <p><strong>Função:</strong> ${escaparHtml(item.funcao || "Não informada")}</p>
-            <p><strong>Instrumento:</strong> ${escaparHtml(item.instrumento || "Não informado")}</p>
-            <p><strong>E-mail:</strong> ${escaparHtml(item.email || "Não informado")}</p>
-            <p><strong>Telefone:</strong> ${escaparHtml(item.telefone || "Não informado")}</p>
-            ${item.administrador ? `<span class="tag-admin">Administrador</span>` : `<span class="tag-integrante">Integrante</span>`}
+            <p><strong>Artista/Banda:</strong> ${escaparHtml(item.artista || "Não informado")}</p>
+            <p><strong>Tom original:</strong> ${escaparHtml(item.tom || "Não informado")} ${item.tom_banda ? " • <strong>Tom da banda:</strong> " + escaparHtml(item.tom_banda) : ""}</p>
+            <p><strong>BPM:</strong> ${escaparHtml(item.bpm || "Não informado")}</p>
+            ${item.observacoes ? `<p><strong>Observações:</strong> ${escaparHtml(item.observacoes)}</p>` : ""}
+
+            <div class="links-musica">
+              ${youtube ? `<a href="${escaparHtml(youtube)}" target="_blank" rel="noopener noreferrer">YouTube</a>` : `<span class="tag-musica secundaria">Sem YouTube</span>`}
+              ${spotify ? `<a href="${escaparHtml(spotify)}" target="_blank" rel="noopener noreferrer">Spotify</a>` : `<span class="tag-musica secundaria">Sem Spotify</span>`}
+            </div>
           </div>
 
-          <div class="botoes-item-integrante">
-            <button class="btn-editar-integrante" type="button" data-editar-integrante="${escaparHtml(item.id)}">Editar</button>
-            <button class="btn-excluir-integrante" type="button" data-excluir-integrante="${escaparHtml(item.id)}">Excluir</button>
+          <div class="botoes-item-musica">
+            <button class="btn-editar-musica" type="button" data-editar-musica="${escaparHtml(item.id)}">Editar</button>
+            <button class="btn-excluir-musica" type="button" data-excluir-musica="${escaparHtml(item.id)}">Excluir</button>
           </div>
         </div>
       </div>
     `;
   }).join("");
 
-  lista.querySelectorAll("[data-editar-integrante]").forEach(function(botao) {
+  lista.querySelectorAll("[data-editar-musica]").forEach(function(botao) {
     botao.addEventListener("click", function() {
-      editarIntegrante(botao.dataset.editarIntegrante);
+      editarMusica(botao.dataset.editarMusica);
     });
   });
 
-  lista.querySelectorAll("[data-excluir-integrante]").forEach(function(botao) {
+  lista.querySelectorAll("[data-excluir-musica]").forEach(function(botao) {
     botao.addEventListener("click", function() {
-      excluirIntegrante(botao.dataset.excluirIntegrante);
+      excluirMusica(botao.dataset.excluirMusica);
     });
   });
 }
 
-function compararTexto(a, b) {
-  return limparTexto(a).localeCompare(limparTexto(b), "pt-BR", { sensitivity: "base" });
-}
-
-function obterDadosFormularioIntegrante() {
+function obterDadosFormularioMusica() {
   return {
-    nome: limparTexto(elemento("integrante-nome")?.value),
-    funcao: limparTexto(elemento("integrante-funcao")?.value),
-    instrumento: limparTexto(elemento("integrante-instrumento")?.value),
-    administrador: elemento("integrante-administrador")?.value === "true",
-    email: limparTexto(elemento("integrante-email")?.value),
-    telefone: limparTexto(elemento("integrante-telefone")?.value)
+    nome: limparTexto(elemento("musica-nome")?.value),
+    artista: limparTexto(elemento("musica-artista")?.value),
+    tom: limparTexto(elemento("musica-tom")?.value),
+    tom_banda: limparTexto(elemento("musica-tom-banda")?.value),
+    bpm: limparTexto(elemento("musica-bpm")?.value),
+    youtube_url: limparTexto(elemento("musica-youtube")?.value),
+    spotify_url: limparTexto(elemento("musica-spotify")?.value),
+    observacoes: limparTexto(elemento("musica-observacoes")?.value)
   };
 }
 
-function preencherFormularioIntegrante(item) {
+function preencherFormularioMusica(item) {
   if (!item) {
     return;
   }
 
-  elemento("integrante-nome").value = item.nome || "";
-  elemento("integrante-funcao").value = item.funcao || "";
-  elemento("integrante-instrumento").value = item.instrumento || "";
-  elemento("integrante-administrador").value = item.administrador ? "true" : "false";
-  elemento("integrante-email").value = item.email || "";
-  elemento("integrante-telefone").value = item.telefone || "";
+  elemento("musica-nome").value = item.nome || "";
+  elemento("musica-artista").value = item.artista || "";
+  elemento("musica-tom").value = item.tom || "";
+  elemento("musica-tom-banda").value = item.tom_banda || "";
+  elemento("musica-bpm").value = item.bpm ?? "";
+  elemento("musica-youtube").value = item.youtube_url || item.youtube || "";
+  elemento("musica-spotify").value = item.spotify_url || item.spotify || "";
+  elemento("musica-observacoes").value = item.observacoes || "";
 
-  const titulo = elemento("titulo-form-integrante");
-  const botaoSalvar = elemento("btn-salvar-integrante");
-  const botaoCancelar = elemento("btn-cancelar-integrante");
+  const titulo = elemento("titulo-form-musica");
+  const botaoSalvar = elemento("btn-salvar-musica");
+  const botaoCancelar = elemento("btn-cancelar-musica");
 
   if (titulo) {
-    titulo.textContent = "Editar integrante";
+    titulo.textContent = "Editar música";
   }
 
   if (botaoSalvar) {
@@ -1252,15 +1325,18 @@ function preencherFormularioIntegrante(item) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function limparFormularioIntegrante() {
-  appState.integranteEditandoId = null;
+function limparFormularioMusica() {
+  appState.musicaEditandoId = null;
 
   [
-    "integrante-nome",
-    "integrante-funcao",
-    "integrante-instrumento",
-    "integrante-email",
-    "integrante-telefone"
+    "musica-nome",
+    "musica-artista",
+    "musica-tom",
+    "musica-tom-banda",
+    "musica-bpm",
+    "musica-youtube",
+    "musica-spotify",
+    "musica-observacoes"
   ].forEach(function(id) {
     const campo = elemento(id);
 
@@ -1269,21 +1345,16 @@ function limparFormularioIntegrante() {
     }
   });
 
-  const administrador = elemento("integrante-administrador");
-  const titulo = elemento("titulo-form-integrante");
-  const botaoSalvar = elemento("btn-salvar-integrante");
-  const botaoCancelar = elemento("btn-cancelar-integrante");
-
-  if (administrador) {
-    administrador.value = "false";
-  }
+  const titulo = elemento("titulo-form-musica");
+  const botaoSalvar = elemento("btn-salvar-musica");
+  const botaoCancelar = elemento("btn-cancelar-musica");
 
   if (titulo) {
-    titulo.textContent = "Novo integrante";
+    titulo.textContent = "Nova música";
   }
 
   if (botaoSalvar) {
-    botaoSalvar.textContent = "Salvar integrante";
+    botaoSalvar.textContent = "Salvar música";
   }
 
   if (botaoCancelar) {
@@ -1291,7 +1362,7 @@ function limparFormularioIntegrante() {
   }
 }
 
-async function salvarIntegrante() {
+async function salvarMusica() {
   const cliente = sb();
   const projetoId = obterProjetoAtualId();
 
@@ -1299,71 +1370,64 @@ async function salvarIntegrante() {
     return;
   }
 
-  const dados = obterDadosFormularioIntegrante();
+  const dados = obterDadosFormularioMusica();
 
   if (!dados.nome) {
-    alert("Informe o nome do integrante.");
-    return;
-  }
-
-  const { data: sessionData } = await cliente.auth.getSession();
-  const usuario = sessionData.session?.user;
-
-  if (!usuario) {
-    mostrarTela("tela-login", { registrar: false });
+    alert("Informe o nome da música.");
     return;
   }
 
   const payload = {
     projeto_id: projetoId,
-    usuario_id: usuario.id,
     nome: dados.nome,
-    funcao: dados.funcao,
-    instrumento: dados.instrumento,
-    administrador: dados.administrador,
-    email: dados.email,
-    telefone: dados.telefone
+    artista: dados.artista,
+    tom: dados.tom,
+    tom_banda: dados.tom_banda,
+    bpm: dados.bpm ? Number(dados.bpm) : null,
+    youtube_url: dados.youtube_url,
+    spotify_url: dados.spotify_url,
+    observacoes: dados.observacoes
   };
 
   let resultado;
 
-  if (appState.integranteEditandoId) {
+  if (appState.musicaEditandoId) {
     resultado = await cliente
-      .from(REPERTORIO_FACIL.tabelas.integrantes)
+      .from(REPERTORIO_FACIL.tabelas.musicas)
       .update(payload)
-      .eq("id", appState.integranteEditandoId)
-      .eq("projeto_id", projetoId)
-      .eq("usuario_id", usuario.id);
+      .eq("id", appState.musicaEditandoId)
+      .eq("projeto_id", projetoId);
   } else {
     resultado = await cliente
-      .from(REPERTORIO_FACIL.tabelas.integrantes)
+      .from(REPERTORIO_FACIL.tabelas.musicas)
       .insert(payload);
   }
 
   if (resultado.error) {
-    alert("Erro ao salvar integrante: " + resultado.error.message);
+    alert("Erro ao salvar música: " + resultado.error.message);
     return;
   }
 
-  limparFormularioIntegrante();
-  await buscarIntegrantes();
+  alert(appState.musicaEditandoId ? "Música atualizada com sucesso." : "Música salva com sucesso.");
+  limparFormularioMusica();
+  await buscarMusicas();
 }
 
-function editarIntegrante(id) {
-  const item = (appState.integrantes || []).find(function(integrante) {
-    return integrante.id === id;
+function editarMusica(id) {
+  const item = (appState.musicas || []).find(function(musica) {
+    return musica.id === id;
   });
 
   if (!item) {
-    alert("Integrante não encontrado.");
+    alert("Música não encontrada.");
     return;
   }
 
-  appState.integranteEditandoId = id;
-  preencherFormularioIntegrante(item);
+  appState.musicaEditandoId = id;
+  preencherFormularioMusica(item);
 }
 
-async function excluirIntegrante(id) {
+async function excluirMusica(id) {
   const cliente = sb();
   const projetoId = obterProjetoAtualId();
 
@@ -1371,118 +1435,33 @@ async function excluirIntegrante(id) {
     return;
   }
 
-  const confirmar = confirm("Excluir este integrante?");
+  const confirmar = confirm("Excluir esta música?");
 
   if (!confirmar) {
     return;
   }
 
-  const { data: sessionData } = await cliente.auth.getSession();
-  const usuario = sessionData.session?.user;
-
-  if (!usuario) {
-    mostrarTela("tela-login", { registrar: false });
-    return;
-  }
-
   const { error } = await cliente
-    .from(REPERTORIO_FACIL.tabelas.integrantes)
+    .from(REPERTORIO_FACIL.tabelas.musicas)
     .delete()
     .eq("id", id)
-    .eq("projeto_id", projetoId)
-    .eq("usuario_id", usuario.id);
+    .eq("projeto_id", projetoId);
 
   if (error) {
-    alert("Erro ao excluir integrante: " + error.message);
+    alert("Erro ao excluir música: " + error.message);
     return;
   }
 
-  if (appState.integranteEditandoId === id) {
-    limparFormularioIntegrante();
+  if (appState.musicaEditandoId === id) {
+    limparFormularioMusica();
   }
 
-  await buscarIntegrantes();
-}
-
-async function criarIntegrante() {
-  await salvarIntegrante();
-}
-
-async function carregarMusicas() {
-  const projetoId = obterProjetoAtualId();
-
-  limparAreaModulo();
-
-  montarFormularioModulo(
-    "Nova música",
-    "Cadastre músicas para montar repertórios.",
-    [
-      { id: "musica-nome", placeholder: "Nome da música" },
-      { id: "musica-artista", placeholder: "Artista / banda" },
-      { id: "musica-tom", placeholder: "Tom" },
-      { id: "musica-bpm", placeholder: "BPM", tipo: "number" }
-    ],
-    "Salvar música",
-    criarMusica
-  );
-
-  const cliente = sb();
-
-  const { data, error } = await cliente
-    .from(REPERTORIO_FACIL.tabelas.musicas)
-    .select("*")
-    .eq("projeto_id", projetoId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    montarListaModulo("Músicas cadastradas", [], function() {
-      return "";
-    });
-    return;
-  }
-
-  montarListaModulo("Músicas cadastradas", data || [], function(item) {
-    return `
-      <p>
-        <strong>${escaparHtml(item.nome || "Sem nome")}</strong><br>
-        ${escaparHtml(item.artista || "")}
-        ${item.tom ? " • Tom: " + escaparHtml(item.tom) : ""}
-        ${item.bpm ? " • BPM: " + escaparHtml(item.bpm) : ""}
-      </p>
-    `;
-  });
+  alert("Música excluída com sucesso.");
+  await buscarMusicas();
 }
 
 async function criarMusica() {
-  const cliente = sb();
-  const projetoId = obterProjetoAtualId();
-
-  const nome = limparTexto(elemento("musica-nome")?.value);
-  const artista = limparTexto(elemento("musica-artista")?.value);
-  const tom = limparTexto(elemento("musica-tom")?.value);
-  const bpm = limparTexto(elemento("musica-bpm")?.value);
-
-  if (!nome) {
-    alert("Informe o nome da música.");
-    return;
-  }
-
-  const { error } = await cliente
-    .from(REPERTORIO_FACIL.tabelas.musicas)
-    .insert({
-      projeto_id: projetoId,
-      nome: nome,
-      artista: artista,
-      tom: tom,
-      bpm: bpm ? Number(bpm) : null
-    });
-
-  if (error) {
-    alert("Erro ao salvar música: " + error.message);
-    return;
-  }
-
-  carregarMusicas();
+  await salvarMusica();
 }
 
 async function carregarRepertorios() {
@@ -1767,7 +1746,6 @@ function configurarAuthListener() {
     }
   });
 }
-
 
 function prepararAplicacao() {
   configurarBotoesFixos();
