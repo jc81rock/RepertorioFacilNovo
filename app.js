@@ -2266,6 +2266,7 @@ function renderizarListaRepertorios() {
 
           <div class="botoes-item-repertorio">
             <button class="btn-editar-repertorio" type="button" data-editar-repertorio="${escaparHtml(item.id)}">Editar</button>
+            <button class="btn-compartilhar-repertorio" type="button" data-compartilhar-repertorio="${escaparHtml(item.id)}">Compartilhar</button>
             <button class="btn-excluir-repertorio" type="button" data-excluir-repertorio="${escaparHtml(item.id)}">Excluir</button>
           </div>
         </div>
@@ -2276,6 +2277,12 @@ function renderizarListaRepertorios() {
   lista.querySelectorAll("[data-editar-repertorio]").forEach(function(botao) {
     botao.addEventListener("click", function() {
       editarRepertorio(botao.dataset.editarRepertorio);
+    });
+  });
+
+  lista.querySelectorAll("[data-compartilhar-repertorio]").forEach(function(botao) {
+    botao.addEventListener("click", function() {
+      compartilharRepertorio(botao.dataset.compartilharRepertorio);
     });
   });
 
