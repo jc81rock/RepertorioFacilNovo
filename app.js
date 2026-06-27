@@ -2043,6 +2043,7 @@ async function carregarRepertorios() {
 
       .btn-editar-repertorio,
       .btn-montar-repertorio,
+      .btn-salvar-pdf-repertorio,
       .btn-subir-musica,
       .btn-descer-musica,
       .btn-adicionar-musica-repertorio {
@@ -2498,6 +2499,9 @@ function renderizarMontagemRepertorio() {
       <h3>Montar repertório</h3>
       <p><strong>${escaparHtml(repertorio.nome || "Repertório")}</strong></p>
       <p>Adicione músicas cadastradas, remova do repertório e altere a ordem.</p>
+      <div class="acoes-repertorio" style="margin-top:10px;">
+        <button class="botao-card btn-salvar-pdf-repertorio" id="btn-salvar-pdf-repertorio" type="button">Salvar PDF</button>
+      </div>
     </div>
 
     <div class="montagem-repertorio-grid">
@@ -2578,9 +2582,14 @@ function renderizarMusicasSelecionadasRepertorio(itens) {
 
 function configurarEventosMontagemRepertorio() {
   const busca = elemento("busca-musicas-repertorio");
+  const botaoSalvarPdf = elemento("btn-salvar-pdf-repertorio");
 
   if (busca) {
     busca.addEventListener("input", renderizarMontagemRepertorio);
+  }
+
+  if (botaoSalvarPdf) {
+    botaoSalvarPdf.addEventListener("click", salvarRepertorioPDF);
   }
 
   document.querySelectorAll("[data-adicionar-musica-repertorio]").forEach(function(botao) {
@@ -2734,6 +2743,222 @@ async function normalizarOrdemRepertorio() {
       .update({ ordem: indice + 1 })
       .eq("id", itens[indice].id);
   }
+}
+
+
+function formatarDataPDF(data) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(data || new Date());
+  } catch (erro) {
+    return "";
+  }
+}
+
+function salvarRepertorioPDF() {
+  const repertorio = obterRepertorioAtualMontagem();
+  const projeto = appState.projetoAtual || {};
+  const itens = [...(appState.repertorioMusicas || [])].sort(function(a, b) {
+    return Number(a.ordem || 0) - Number(b.ordem || 0);
+  });
+
+  if (!repertorio) {
+    alert("Abra um repertório antes de salvar o PDF.");
+    return;
+  }
+
+  if (itens.length === 0) {
+    alert("Adicione músicas ao repertório antes de salvar o PDF.");
+    return;
+  }
+
+  const dataGeracao = formatarDataPDF(new Date());
+  const nomeProjeto = escaparHtml(projeto.nome || "Projeto");
+  const nomeRepertorio = escaparHtml(repertorio.nome || "Repertório");
+  const observacoes = escaparHtml(repertorio.observacoes || "");
+
+  const linhas = itens.map(function(item, indice) {
+    const musica = item.musica || {};
+    const numero = String(indice + 1).padStart(2, "0");
+
+    return `
+      <tr>
+        <td class="numero">${numero}</td>
+        <td>
+          <strong>${escaparHtml(musica.nome || "Sem nome")}</strong>
+          <span>${escaparHtml(musica.artista || "Artista não informado")}</span>
+        </td>
+        <td>${escaparHtml(musica.tom || "-")}</td>
+        <td>${escaparHtml(musica.bpm || "-")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <title>${nomeProjeto} - ${nomeRepertorio}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          padding: 32px;
+          font-family: Arial, Helvetica, sans-serif;
+          color: #111827;
+          background: #ffffff;
+        }
+        .cabecalho {
+          border-bottom: 3px solid #6d28d9;
+          padding-bottom: 16px;
+          margin-bottom: 22px;
+        }
+        .marca {
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+          color: #6d28d9;
+          margin-bottom: 8px;
+        }
+        h1 {
+          margin: 0 0 6px;
+          font-size: 28px;
+          color: #111827;
+        }
+        h2 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #374151;
+        }
+        .info {
+          margin-top: 14px;
+          display: grid;
+          gap: 4px;
+          font-size: 13px;
+          color: #4b5563;
+        }
+        .observacoes {
+          margin: 18px 0;
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: #f3f4f6;
+          font-size: 13px;
+          color: #374151;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 12px;
+        }
+        th {
+          text-align: left;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+          color: #6b7280;
+          border-bottom: 2px solid #e5e7eb;
+          padding: 10px 8px;
+        }
+        td {
+          border-bottom: 1px solid #e5e7eb;
+          padding: 12px 8px;
+          vertical-align: top;
+          font-size: 14px;
+        }
+        td strong {
+          display: block;
+          font-size: 15px;
+          color: #111827;
+          margin-bottom: 3px;
+        }
+        td span {
+          display: block;
+          font-size: 12px;
+          color: #6b7280;
+        }
+        .numero {
+          width: 52px;
+          font-weight: 800;
+          color: #6d28d9;
+        }
+        .rodape {
+          margin-top: 24px;
+          padding-top: 12px;
+          border-top: 1px solid #e5e7eb;
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          font-size: 12px;
+          color: #6b7280;
+        }
+        @media print {
+          body { padding: 22px; }
+          .cabecalho { break-after: avoid; }
+          tr { break-inside: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <section class="cabecalho">
+        <div class="marca">Repertório Fácil</div>
+        <h1>${nomeProjeto}</h1>
+        <h2>${nomeRepertorio}</h2>
+        <div class="info">
+          <div><strong>Data de geração:</strong> ${escaparHtml(dataGeracao)}</div>
+          <div><strong>Total de músicas:</strong> ${itens.length}</div>
+        </div>
+      </section>
+
+      ${observacoes ? `<div class="observacoes"><strong>Observações:</strong><br>${observacoes}</div>` : ""}
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Música</th>
+            <th>Tom</th>
+            <th>BPM</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhas}
+        </tbody>
+      </table>
+
+      <div class="rodape">
+        <span>Gerado pelo Repertório Fácil</span>
+        <span>${nomeRepertorio}</span>
+      </div>
+
+      <script>
+        window.addEventListener('load', function() {
+          setTimeout(function() {
+            window.print();
+          }, 300);
+        });
+      <\/script>
+    </body>
+    </html>
+  `;
+
+  const janela = window.open("", "_blank");
+
+  if (!janela) {
+    alert("O navegador bloqueou a janela do PDF. Libere pop-ups para este site e tente novamente.");
+    return;
+  }
+
+  janela.document.open();
+  janela.document.write(html);
+  janela.document.close();
 }
 
 function fecharMontagemRepertorio() {
