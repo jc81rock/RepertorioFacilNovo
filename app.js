@@ -3851,10 +3851,160 @@ function configurarAuthListener() {
 }
 
 
+function configurarNavegacaoEnterGlobal() {
+  if (window.__repertorioFacilEnterGlobalConfigurado) {
+    return;
+  }
+
+  window.__repertorioFacilEnterGlobalConfigurado = true;
+
+  document.addEventListener("keydown", function(evento) {
+    if (evento.key !== "Enter" || evento.isComposing) {
+      return;
+    }
+
+    const campoAtual = evento.target;
+
+    if (!campoAtual || !campoAtual.matches || !campoAtual.matches("input, select, textarea")) {
+      return;
+    }
+
+    if (campoAtual.id === "login-email" || campoAtual.id === "login-senha") {
+      return;
+    }
+
+    const tag = campoAtual.tagName.toLowerCase();
+
+    if (tag === "textarea") {
+      if (evento.ctrlKey || evento.metaKey) {
+        evento.preventDefault();
+        acionarBotaoSalvarDoFormulario(campoAtual);
+      }
+
+      return;
+    }
+
+    evento.preventDefault();
+
+    if (evento.shiftKey) {
+      focarCampoAnterior(campoAtual);
+      return;
+    }
+
+    focarProximoCampoOuSalvar(campoAtual);
+  });
+}
+
+function obterControlesDoFormulario(campo) {
+  const container =
+    campo.closest(".form-integrantes") ||
+    campo.closest(".form-musicas") ||
+    campo.closest(".form-repertorios") ||
+    campo.closest(".form-eventos") ||
+    campo.closest(".card-login") ||
+    campo.closest(".card-projeto");
+
+  if (!container) {
+    return [];
+  }
+
+  return Array.from(container.querySelectorAll("input, select, textarea")).filter(function(controle) {
+    if (controle.disabled || controle.readOnly) {
+      return false;
+    }
+
+    const estilo = window.getComputedStyle(controle);
+
+    if (estilo.display === "none" || estilo.visibility === "hidden") {
+      return false;
+    }
+
+    if (controle.offsetParent === null && estilo.position !== "fixed") {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function focarProximoCampoOuSalvar(campoAtual) {
+  const controles = obterControlesDoFormulario(campoAtual);
+  const indiceAtual = controles.indexOf(campoAtual);
+
+  if (indiceAtual === -1) {
+    return;
+  }
+
+  const proximoCampo = controles[indiceAtual + 1];
+
+  if (proximoCampo) {
+    proximoCampo.focus();
+
+    if (typeof proximoCampo.select === "function" && proximoCampo.tagName.toLowerCase() !== "select") {
+      proximoCampo.select();
+    }
+
+    return;
+  }
+
+  acionarBotaoSalvarDoFormulario(campoAtual);
+}
+
+function focarCampoAnterior(campoAtual) {
+  const controles = obterControlesDoFormulario(campoAtual);
+  const indiceAtual = controles.indexOf(campoAtual);
+
+  if (indiceAtual <= 0) {
+    return;
+  }
+
+  const campoAnterior = controles[indiceAtual - 1];
+
+  if (campoAnterior) {
+    campoAnterior.focus();
+
+    if (typeof campoAnterior.select === "function" && campoAnterior.tagName.toLowerCase() !== "select") {
+      campoAnterior.select();
+    }
+  }
+}
+
+function acionarBotaoSalvarDoFormulario(campo) {
+  const container =
+    campo.closest(".form-integrantes") ||
+    campo.closest(".form-musicas") ||
+    campo.closest(".form-repertorios") ||
+    campo.closest(".form-eventos") ||
+    campo.closest(".card-login") ||
+    campo.closest(".card-projeto");
+
+  if (!container) {
+    return;
+  }
+
+  const botaoSalvar =
+    container.querySelector("#btn-salvar-integrante") ||
+    container.querySelector("#btn-salvar-musica") ||
+    container.querySelector("#btn-salvar-repertorio") ||
+    container.querySelector("#btn-salvar-evento") ||
+    container.querySelector("#btn-criar-projeto") ||
+    container.querySelector("#btn-login-email") ||
+    container.querySelector("button[id*='salvar']") ||
+    container.querySelector("button.botao-card") ||
+    container.querySelector("button.botao-principal");
+
+  if (botaoSalvar && !botaoSalvar.disabled) {
+    botaoSalvar.click();
+  }
+}
+
+
+
 function prepararAplicacao() {
   configurarBotoesFixos();
   configurarEnterNosCampos();
   configurarAuthListener();
+  configurarNavegacaoEnterGlobal();
 }
 
 document.addEventListener("DOMContentLoaded", async function() {
