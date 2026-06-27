@@ -995,7 +995,7 @@ async function carregarIntegrantes() {
     </style>
 
     <div class="modulo-integrantes">
-      <div class="card-projeto">
+      <div class="card-projeto" id="card-form-repertorio">
         <span class="tag">Cadastro</span>
         <h3 id="titulo-form-integrante">Novo integrante</h3>
         <p>Cadastre músicos, funções, instrumentos e administradores do projeto.</p>
@@ -2103,8 +2103,9 @@ async function carregarRepertorios() {
       }
 
       .montagem-repertorio {
-        grid-column: 1 / -1;
         margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255,255,255,.12);
       }
 
       .montagem-repertorio-grid {
@@ -2161,10 +2162,12 @@ async function carregarRepertorios() {
             <button class="botao-secundario-modulo btn-gerar-pdf-repertorio" id="btn-gerar-pdf-repertorio" type="button" style="display:none;">PDF</button>
             <button class="botao-secundario-modulo" id="btn-cancelar-repertorio" type="button" style="display:none;">Cancelar edição</button>
           </div>
+
+          <div id="montagem-repertorio" class="montagem-repertorio" style="display:none;"></div>
         </div>
       </div>
 
-      <div class="card-projeto">
+      <div class="card-projeto" id="card-lista-repertorios">
         <span class="tag">Lista</span>
         <h3>Repertórios cadastrados</h3>
         <p>Salve, edite, exclua ou monte as músicas do repertório.</p>
@@ -2174,8 +2177,6 @@ async function carregarRepertorios() {
         </div>
       </div>
     </div>
-
-    <div id="montagem-repertorio" class="card-projeto montagem-repertorio" style="display:none;"></div>
   `;
 
   appState.repertorioEditandoId = null;
@@ -2335,9 +2336,19 @@ function preencherFormularioRepertorio(item) {
     botaoCancelar.style.display = "none";
   }
 
-  const area = elemento("area-modulo");
-  if (area) {
-    area.scrollIntoView({ behavior: "smooth", block: "start" });
+  const cardForm = elemento("card-form-repertorio");
+  const cardLista = elemento("card-lista-repertorios");
+
+  if (cardForm) {
+    cardForm.style.gridColumn = "1 / -1";
+  }
+
+  if (cardLista) {
+    cardLista.style.display = "none";
+  }
+
+  if (cardForm) {
+    cardForm.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
@@ -2379,6 +2390,17 @@ function limparFormularioRepertorio() {
 
   if (botaoCancelar) {
     botaoCancelar.style.display = "none";
+  }
+
+  const cardForm = elemento("card-form-repertorio");
+  const cardLista = elemento("card-lista-repertorios");
+
+  if (cardForm) {
+    cardForm.style.gridColumn = "";
+  }
+
+  if (cardLista) {
+    cardLista.style.display = "block";
   }
 
   fecharMontagemRepertorio();
@@ -2585,8 +2607,7 @@ function renderizarMontagemRepertorio() {
 
   montagem.innerHTML = `
     <div class="titulo-montagem-repertorio">
-      <span class="tag">Montagem</span>
-      <h3>Editar repertório</h3>
+      <span class="tag">Músicas do repertório</span>
       <p><strong>${escaparHtml(repertorio.nome || "Repertório")}</strong></p>
       <p>Adicione músicas, altere a ordem e remova músicas deste repertório.</p>
     </div>
