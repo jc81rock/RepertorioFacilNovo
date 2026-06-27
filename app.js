@@ -394,6 +394,8 @@ async function carregarProjetos() {
     return;
   }
 
+  let projetos = [];
+
   const { data, error } = await cliente
     .from(REPERTORIO_FACIL.tabelas.projetoParticipantes)
     .select("id, projeto_id, usuario_id, papel, status, projetos(*)")
@@ -401,7 +403,53 @@ async function carregarProjetos() {
     .eq("status", "ativo")
     .order("criado_em", { ascending: false });
 
+  if (!error && Array.isArray(data)) {
+    projetos = data
+      .filter(function(item) {
+        return item.projetos && item.projetos.id;
+      })
+      .map(function(item) {
+        return {
+          ...item.projetos,
+          papel_usuario: item.papel || "integrante",
+          participante_id: item.id
+        };
+      });
+  }
+
   if (error) {
+    console.warn("Erro ao carregar participantes. Tentando compatibilidade antiga:", error.message);
+  }
+
+  /*
+    Compatibilidade de migração:
+    se o usuário já tinha projetos na arquitetura antiga, o sistema ainda deve exibi-los.
+    Aqui buscamos projetos com usuario_id do usuário, criamos o vínculo como administrador
+    quando ele ainda não existe e mantemos o fluxo atual funcionando.
+  */
+  const { data: projetosAntigos, error: erroProjetosAntigos } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.projetos)
+    .select("*")
+    .eq("usuario_id", usuario.id)
+    .order("created_at", { ascending: false });
+
+  if (!erroProjetosAntigos && Array.isArray(projetosAntigos)) {
+    for (const projetoAntigo of projetosAntigos) {
+      const jaListado = projetos.some(function(projeto) {
+        return projeto.id === projetoAntigo.id;
+      });
+
+      if (!jaListado) {
+        await garantirParticipanteAdministrador(projetoAntigo, usuario);
+        projetos.push({
+          ...projetoAntigo,
+          papel_usuario: "administrador"
+        });
+      }
+    }
+  }
+
+  if (erroProjetosAntigos && error) {
     grid.innerHTML = `
       <div class="card-projeto">
         <h3>Erro ao carregar</h3>
@@ -411,21 +459,43 @@ async function carregarProjetos() {
     return;
   }
 
-  const projetos = (data || [])
-    .filter(function(item) {
-      return item.projetos && item.projetos.id;
-    })
-    .map(function(item) {
-      return {
-        ...item.projetos,
-        papel_usuario: item.papel || "integrante",
-        participante_id: item.id
-      };
-    });
-
   await preencherResumoProjetos(projetos);
   appState.participantesProjetos = projetos;
   montarListaProjetos(projetos);
+}
+
+async function garantirParticipanteAdministrador(projeto, usuario) {
+  const cliente = sb();
+
+  if (!cliente || !projeto?.id || !usuario?.id) {
+    return;
+  }
+
+  const { data: existente } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.projetoParticipantes)
+    .select("id")
+    .eq("projeto_id", projeto.id)
+    .eq("usuario_id", usuario.id)
+    .maybeSingle();
+
+  if (existente && existente.id) {
+    return;
+  }
+
+  const { error } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.projetoParticipantes)
+    .insert({
+      projeto_id: projeto.id,
+      usuario_id: usuario.id,
+      email: usuario.email || "",
+      nome: obterNomeUsuario(usuario),
+      papel: "administrador",
+      status: "ativo"
+    });
+
+  if (error) {
+    console.warn("Não foi possível criar vínculo do projeto antigo:", error.message);
+  }
 }
 
 async function contarTabelaProjeto(tabela, projetoId) {
@@ -673,17 +743,32 @@ async function acessarProjeto(id) {
     .eq("projeto_id", id)
     .eq("usuario_id", usuario.id)
     .eq("status", "ativo")
-    .single();
+    .maybeSingle();
 
-  if (error || !data || !data.projetos) {
-    alert("Você não possui acesso ativo a este projeto.");
-    localStorage.removeItem("projeto_atual");
-    carregarProjetos();
+  if (!error && data && data.projetos) {
+    salvarProjetoAtual({ ...data.projetos, papel_usuario: data.papel }, data.papel);
+    abrirPainelProjeto();
     return;
   }
 
-  salvarProjetoAtual({ ...data.projetos, papel_usuario: data.papel }, data.papel);
-  abrirPainelProjeto();
+  /* Compatibilidade com projetos criados antes da arquitetura colaborativa. */
+  const { data: projetoAntigo, error: erroProjetoAntigo } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.projetos)
+    .select("*")
+    .eq("id", id)
+    .eq("usuario_id", usuario.id)
+    .maybeSingle();
+
+  if (!erroProjetoAntigo && projetoAntigo) {
+    await garantirParticipanteAdministrador(projetoAntigo, usuario);
+    salvarProjetoAtual({ ...projetoAntigo, papel_usuario: "administrador" }, "administrador");
+    abrirPainelProjeto();
+    return;
+  }
+
+  alert("Você não possui acesso ativo a este projeto.");
+  localStorage.removeItem("projeto_atual");
+  carregarProjetos();
 }
 
 function abrirPainelProjeto() {
@@ -4413,14 +4498,27 @@ async function restaurarProjetoAtual() {
     .eq("projeto_id", id)
     .eq("usuario_id", usuario.id)
     .eq("status", "ativo")
-    .single();
+    .maybeSingle();
 
-  if (error || !data || !data.projetos) {
-    localStorage.removeItem("projeto_atual");
+  if (!error && data && data.projetos) {
+    salvarProjetoAtual({ ...data.projetos, papel_usuario: data.papel }, data.papel);
     return;
   }
 
-  salvarProjetoAtual({ ...data.projetos, papel_usuario: data.papel }, data.papel);
+  const { data: projetoAntigo, error: erroProjetoAntigo } = await cliente
+    .from(REPERTORIO_FACIL.tabelas.projetos)
+    .select("*")
+    .eq("id", id)
+    .eq("usuario_id", usuario.id)
+    .maybeSingle();
+
+  if (!erroProjetoAntigo && projetoAntigo) {
+    await garantirParticipanteAdministrador(projetoAntigo, usuario);
+    salvarProjetoAtual({ ...projetoAntigo, papel_usuario: "administrador" }, "administrador");
+    return;
+  }
+
+  localStorage.removeItem("projeto_atual");
 }
 
 function configurarBotoesFixos() {
