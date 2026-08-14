@@ -6235,6 +6235,63 @@ function obterLinkSpotifyMusica(item) {
     }) || "";
 }
 
+/* CrossSet v82 — capa compacta do Spotify, somente visual e sem alterar o banco. */
+const cacheCapasSpotify = new Map();
+
+async function obterCapaSpotifyMusica(item) {
+  const linkSpotify = obterLinkSpotifyMusica(item);
+
+  if (!linkSpotify) {
+    return "";
+  }
+
+  if (cacheCapasSpotify.has(linkSpotify)) {
+    return cacheCapasSpotify.get(linkSpotify);
+  }
+
+  const requisicao = fetch("https://open.spotify.com/oembed?url=" + encodeURIComponent(linkSpotify))
+    .then(function(resposta) {
+      if (!resposta.ok) return null;
+      return resposta.json();
+    })
+    .then(function(dados) {
+      return limparTexto(dados?.thumbnail_url || "");
+    })
+    .catch(function() {
+      return "";
+    });
+
+  cacheCapasSpotify.set(linkSpotify, requisicao);
+  return requisicao;
+}
+
+function carregarCapasSpotifyMusicas(lista, itens) {
+  if (!lista) return;
+
+  itens.forEach(async function(item) {
+    const destino = lista.querySelector(`[data-capa-spotify-musica="${CSS.escape(String(item.id))}"]`);
+    if (!destino) return;
+
+    const urlCapa = await obterCapaSpotifyMusica(item);
+    if (!urlCapa || !destino.isConnected) return;
+
+    const imagem = document.createElement("img");
+    imagem.className = "musica-capa-mini";
+    imagem.src = urlCapa;
+    imagem.alt = "";
+    imagem.loading = "lazy";
+    imagem.referrerPolicy = "no-referrer";
+    imagem.addEventListener("error", function() {
+      imagem.remove();
+      destino.classList.remove("com-capa");
+    });
+
+    destino.textContent = "";
+    destino.classList.add("com-capa");
+    destino.appendChild(imagem);
+  });
+}
+
 function exportarMusicasProjetoPDF() {
   const projetoId = obterProjetoAtualId();
   const projeto = appState.projetoAtual || {};
@@ -7136,7 +7193,7 @@ function renderizarListaMusicas() {
         <div class="musica-linha-principal">
           <div class="musica-identidade">
             ${permiteArrastar ? `<span class="musica-arrastar-personalizada" title="Arrastar para reorganizar" aria-label="Arrastar para reorganizar">⋮⋮</span>` : ""}
-            <span class="musica-icone-mini">♪</span>
+            <span class="musica-icone-mini" data-capa-spotify-musica="${escaparHtml(item.id)}">♪</span>
             <span class="musica-nome-mini" title="${escaparHtml(item.nome || "Sem nome")}">${escaparHtml(item.nome || "Sem nome")}</span>
             <span class="musica-artista-mini" title="${escaparHtml(item.artista || "Não informado")}">${escaparHtml(item.artista || "Não informado")}</span>
           </div>
@@ -7164,6 +7221,7 @@ function renderizarListaMusicas() {
   }).join("");
 
   requestAnimationFrame(function() {
+    carregarCapasSpotifyMusicas(lista, itens);
     ajustarAlturaListaMusicas();
     ativarBarrasInternasCrossSet();
     configurarArrastarMusicasCadastradas();

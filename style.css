@@ -2311,3 +2311,19 @@ button#btn-convidar-integrante::after,
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* CrossSet v82 — miniatura da capa no espaço atual do ícone da música. */
+#tela-painel-projeto .modulo-musicas .musica-icone-mini.com-capa {
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+}
+
+#tela-painel-projeto .modulo-musicas .musica-capa-mini {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: inherit !important;
+}
