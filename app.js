@@ -6249,17 +6249,21 @@ async function obterCapaSpotifyMusica(item) {
     return cacheCapasSpotify.get(linkSpotify);
   }
 
-  const requisicao = fetch("https://open.spotify.com/oembed?url=" + encodeURIComponent(linkSpotify))
-    .then(function(resposta) {
-      if (!resposta.ok) return null;
-      return resposta.json();
-    })
-    .then(function(dados) {
-      return limparTexto(dados?.thumbnail_url || "");
-    })
-    .catch(function() {
+  const requisicao = (async function() {
+    try {
+      const resultados = await buscarMusicasSpotifySmart(
+        [item?.nome, item?.artista].filter(Boolean).join(" ")
+      );
+      const musicaCorrespondente = resultados.find(function(resultado) {
+        return limparTexto(resultado.spotify_url) === linkSpotify;
+      }) || resultados[0];
+
+      return limparTexto(musicaCorrespondente?.imagem || "");
+    } catch (erro) {
+      console.warn("Não foi possível carregar a capa do Spotify.", erro);
       return "";
-    });
+    }
+  })();
 
   cacheCapasSpotify.set(linkSpotify, requisicao);
   return requisicao;
