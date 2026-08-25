@@ -12710,9 +12710,8 @@ async function salvarEvento() {
     return;
   }
 
-  const payload = {
+  const payloadBase = {
     projeto_id: projetoId,
-    usuario_id: usuario.id,
     nome: dados.nome,
     data_evento: dados.data_evento || null,
     hora_evento: dados.hora_evento || null,
@@ -12729,14 +12728,16 @@ async function salvarEvento() {
   if (appState.eventoEditandoId) {
     resultado = await cliente
       .from(REPERTORIO_FACIL.tabelas.eventos)
-      .update(payload)
+      .update(payloadBase)
       .eq("id", appState.eventoEditandoId)
-      .eq("projeto_id", projetoId)
-      .eq("usuario_id", usuario.id);
+      .eq("projeto_id", projetoId);
   } else {
     resultado = await cliente
       .from(REPERTORIO_FACIL.tabelas.eventos)
-      .insert(payload);
+      .insert({
+        ...payloadBase,
+        usuario_id: usuario.id
+      });
   }
 
   if (resultado.error) {
