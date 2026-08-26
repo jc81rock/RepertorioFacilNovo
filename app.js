@@ -235,12 +235,6 @@ function limparEstadoProjetoAnterior() {
   appState.repertorioEditandoId = null;
   appState.repertorioMontandoId = null;
 
-  const botaoToggleEdicaoRepertorio = elemento("btn-toggle-edicao-repertorio");
-  if (botaoToggleEdicaoRepertorio) {
-    botaoToggleEdicaoRepertorio.addEventListener("click", function() {
-      alternarEdicaoRepertorio();
-    });
-  }
   appState.repertorioMusicas = [];
   appState.repertorioRelacoesTodas = [];
   appState.progressoMusicas = [];
@@ -8977,7 +8971,7 @@ async function carregarRepertorios() {
         <h3 id="titulo-form-repertorio">Novo repertório</h3>
         <p>Crie uma lista para show, ensaio ou evento.</p>
 
-        <button class="botao-repertorio-secundario" id="btn-toggle-edicao-repertorio" type="button" style="display:none;">
+        <button class="botao-repertorio-secundario" id="btn-toggle-edicao-repertorio" type="button" style="display:none;" onclick="alternarEdicaoRepertorio()">
           <svg class="icone-limpo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
           <span>Editar repertório</span>
         </button>
@@ -9845,17 +9839,6 @@ function renderizarMontagemRepertorio() {
       </section>
 
       <section class="repertorio-builder-card">
-        <div class="repertorio-resumos">
-          <div class="repertorio-resumo-card"><strong>${resumoRepertorio.quantidade}</strong><span>Músicas</span></div>
-          <div class="repertorio-resumo-card"><strong>${duracaoEstimada}</strong><span>Duração estimada</span></div>
-          <div class="repertorio-resumo-card"><strong>${resumoRepertorio.percentual}%</strong><span>Preparo médio</span></div>
-        </div>
-
-        <div class="resumo-repertorio-inteligente">
-          ${montarMiniProgresso(resumoRepertorio.percentual, resumoRepertorio.cor, textoMusicas)}
-          <p style="margin-top:8px; font-size:12px; color:#cbd5e1;">O percentual do repertório é a média do progresso das músicas selecionadas.</p>
-        </div>
-
         <div class="setlist-cabecalho-final">
           <div>
             <h3>Músicas no repertório</h3>
@@ -9882,6 +9865,17 @@ function renderizarMontagemRepertorio() {
         <div class="acoes-edicao-repertorio" style="margin-top:10px;">
           <button class="botao-repertorio-secundario btn-gerar-pdf-repertorio" id="btn-gerar-pdf-repertorio-edicao" type="button" style="display:${repertorio.temporario ? "none" : "inline-flex"};">Gerar PDF</button>
           <button class="botao-repertorio-secundario" id="btn-cancelar-repertorio-edicao" type="button">Voltar à lista</button>
+        </div>
+
+        <div class="repertorio-resumos">
+          <div class="repertorio-resumo-card"><strong>${resumoRepertorio.quantidade}</strong><span>Músicas</span></div>
+          <div class="repertorio-resumo-card"><strong>${duracaoEstimada}</strong><span>Duração estimada</span></div>
+          <div class="repertorio-resumo-card"><strong>${resumoRepertorio.percentual}%</strong><span>Preparo médio</span></div>
+        </div>
+
+        <div class="resumo-repertorio-inteligente">
+          ${montarMiniProgresso(resumoRepertorio.percentual, resumoRepertorio.cor, textoMusicas)}
+          <p style="margin-top:8px; font-size:12px; color:#cbd5e1;">O percentual do repertório é a média do progresso das músicas selecionadas.</p>
         </div>
       </section>
     </div>
