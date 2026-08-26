@@ -8896,6 +8896,11 @@ async function carregarRepertorios() {
         margin: 8px 0 !important;
       }
 
+      .resumo-final-repertorio {
+        width: 100% !important;
+        margin-top: 12px !important;
+      }
+
       .repertorio-resumo-card {
         padding: 8px 10px !important;
       }
@@ -9867,6 +9872,10 @@ function renderizarMontagemRepertorio() {
           <button class="botao-repertorio-secundario" id="btn-cancelar-repertorio-edicao" type="button">Voltar à lista</button>
         </div>
 
+      </section>
+    </div>
+
+    <div id="resumo-final-repertorio" class="repertorio-builder-card resumo-final-repertorio">
         <div class="repertorio-resumos">
           <div class="repertorio-resumo-card"><strong>${resumoRepertorio.quantidade}</strong><span>Músicas</span></div>
           <div class="repertorio-resumo-card"><strong>${duracaoEstimada}</strong><span>Duração estimada</span></div>
@@ -9877,7 +9886,6 @@ function renderizarMontagemRepertorio() {
           ${montarMiniProgresso(resumoRepertorio.percentual, resumoRepertorio.cor, textoMusicas)}
           <p style="margin-top:8px; font-size:12px; color:#cbd5e1;">O percentual do repertório é a média do progresso das músicas selecionadas.</p>
         </div>
-      </section>
     </div>
   `;
 
