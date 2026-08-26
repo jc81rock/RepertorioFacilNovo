@@ -6,7 +6,7 @@
 
   <title>CrossSet</title>
 
-  <link rel="stylesheet" href="style.css?v=82" />
+  <link rel="stylesheet" href="style.css?v=83" />
 
   <style>
     /* Polimento geral da interface - Crosset v1.0 */
@@ -581,7 +581,7 @@
     // CrossSet v70: atualização crítica única.
     // Limpa versões antigas antes de carregar a interface atual.
     (function () {
-      const BUILD = "crossset-v82";
+      const BUILD = "crossset-v83";
       const KEY = "crossset_build_aplicado";
       let anterior = "";
       try { anterior = localStorage.getItem(KEY) || ""; } catch (e) {}
@@ -609,7 +609,7 @@
       window.__crosssetBuild = BUILD;
     })();
   </script>
-  <script src="app.js?v=82"></script>
+  <script src="app.js?v=83"></script>
 
 
 
@@ -1338,7 +1338,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=82', { updateViaCache: 'none' })
+        navigator.serviceWorker.register('./service-worker.js?v=83', { updateViaCache: 'none' })
           .then(() => console.log('Service Worker registrado com sucesso.'))
           .catch(err => console.error('Erro ao registrar Service Worker:', err));
       });

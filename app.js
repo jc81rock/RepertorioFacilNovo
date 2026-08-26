@@ -9283,7 +9283,9 @@ function definirEdicaoRepertorioRecolhida(recolhida) {
   if (recolhida) {
     cardForm.classList.add("edicao-repertorio-recolhida");
     botaoToggle.style.display = "inline-flex";
-    botaoToggle.innerHTML = `<svg class="icone-limpo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Editar repertório</span>`;
+    const repertorioAtual = appState.repertorios.find((item) => item.id === appState.repertorioEditandoId);
+    const nomeRepertorioAtual = repertorioAtual?.nome ? ` — ${escaparHtml(repertorioAtual.nome)}` : "";
+    botaoToggle.innerHTML = `<svg class="icone-limpo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Editar repertório${nomeRepertorioAtual}</span>`;
   } else {
     cardForm.classList.remove("edicao-repertorio-recolhida");
     botaoToggle.style.display = appState.repertorioEditandoId ? "inline-flex" : "none";
