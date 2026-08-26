@@ -234,6 +234,13 @@ function limparEstadoProjetoAnterior() {
   appState.repertorios = [];
   appState.repertorioEditandoId = null;
   appState.repertorioMontandoId = null;
+
+  const botaoToggleEdicaoRepertorio = elemento("btn-toggle-edicao-repertorio");
+  if (botaoToggleEdicaoRepertorio) {
+    botaoToggleEdicaoRepertorio.addEventListener("click", function() {
+      alternarEdicaoRepertorio();
+    });
+  }
   appState.repertorioMusicas = [];
   appState.repertorioRelacoesTodas = [];
   appState.progressoMusicas = [];
@@ -8769,6 +8776,30 @@ async function carregarRepertorios() {
 
 
 
+      /* CrossSet v43 - Repertórios: edição recolhida por padrão.
+         Alteração local: não muda estrutura global, cores, fontes ou ícones aprovados. */
+      #card-form-repertorio.edicao-repertorio-recolhida > .tag,
+      #card-form-repertorio.edicao-repertorio-recolhida > #titulo-form-repertorio,
+      #card-form-repertorio.edicao-repertorio-recolhida > p,
+      #card-form-repertorio.edicao-repertorio-recolhida > .form-repertorios > label,
+      #card-form-repertorio.edicao-repertorio-recolhida > .form-repertorios > .acoes-repertorio {
+        display: none !important;
+      }
+
+      #card-form-repertorio.edicao-repertorio-recolhida > #btn-toggle-edicao-repertorio {
+        display: inline-flex !important;
+        width: auto !important;
+        align-self: flex-start !important;
+        margin: 0 0 8px 0 !important;
+      }
+
+      #card-form-repertorio:not(.edicao-repertorio-recolhida) > #btn-toggle-edicao-repertorio {
+        display: inline-flex;
+        width: auto !important;
+        align-self: flex-start !important;
+        margin: 0 0 8px 0 !important;
+      }
+
       /* CrossSet v42 - Repertórios: card de edição mais compacto, somente espaços */
       #card-form-repertorio:not(.card-repertorio-expandido) {
         padding: 13px 18px !important;
@@ -8945,6 +8976,11 @@ async function carregarRepertorios() {
         <span class="tag">Cadastro</span>
         <h3 id="titulo-form-repertorio">Novo repertório</h3>
         <p>Crie uma lista para show, ensaio ou evento.</p>
+
+        <button class="botao-repertorio-secundario" id="btn-toggle-edicao-repertorio" type="button" style="display:none;">
+          <svg class="icone-limpo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span>Editar repertório</span>
+        </button>
 
         <div class="form-repertorios">
           <label>
@@ -9237,6 +9273,43 @@ function renderizarListaRepertorios() {
   });
 }
 
+function definirEdicaoRepertorioRecolhida(recolhida) {
+  const cardForm = elemento("card-form-repertorio");
+  const botaoToggle = elemento("btn-toggle-edicao-repertorio");
+
+  if (!cardForm || !botaoToggle) {
+    return;
+  }
+
+  if (recolhida) {
+    cardForm.classList.add("edicao-repertorio-recolhida");
+    botaoToggle.style.display = "inline-flex";
+    botaoToggle.innerHTML = `<svg class="icone-limpo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Editar repertório</span>`;
+  } else {
+    cardForm.classList.remove("edicao-repertorio-recolhida");
+    botaoToggle.style.display = appState.repertorioEditandoId ? "inline-flex" : "none";
+    botaoToggle.innerHTML = `<svg class="icone-limpo" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6 6-6-6"/><path d="M12 3v18"/></svg><span>Fechar edição</span>`;
+  }
+}
+
+function alternarEdicaoRepertorio() {
+  const cardForm = elemento("card-form-repertorio");
+
+  if (!cardForm || !appState.repertorioEditandoId) {
+    return;
+  }
+
+  const recolhida = cardForm.classList.contains("edicao-repertorio-recolhida");
+  definirEdicaoRepertorioRecolhida(!recolhida);
+
+  if (recolhida) {
+    const campoNome = elemento("repertorio-nome");
+    if (campoNome) {
+      campoNome.focus();
+    }
+  }
+}
+
 function preencherFormularioRepertorio(item) {
   if (!item) {
     return;
@@ -9295,6 +9368,8 @@ function preencherFormularioRepertorio(item) {
     cardLista.style.display = "none";
   }
 
+  definirEdicaoRepertorioRecolhida(true);
+
   if (cardForm) {
     cardForm.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -9302,6 +9377,15 @@ function preencherFormularioRepertorio(item) {
 
 function limparFormularioRepertorio() {
   appState.repertorioEditandoId = null;
+
+  const cardFormEdicao = elemento("card-form-repertorio");
+  const botaoToggleEdicao = elemento("btn-toggle-edicao-repertorio");
+  if (cardFormEdicao) {
+    cardFormEdicao.classList.remove("edicao-repertorio-recolhida");
+  }
+  if (botaoToggleEdicao) {
+    botaoToggleEdicao.style.display = "none";
+  }
 
   const campoNome = elemento("repertorio-nome");
   const campoObservacoes = elemento("repertorio-observacoes");
@@ -9470,6 +9554,10 @@ async function salvarRepertorio() {
   if (musicasTemporarias.length) {
     appState.repertorioMusicas = musicasTemporarias;
     await salvarMusicasTemporariasDoRepertorio(idSalvo);
+  }
+
+  if (appState.repertorioEditandoId) {
+    definirEdicaoRepertorioRecolhida(true);
   }
 
   await buscarRepertorios();
